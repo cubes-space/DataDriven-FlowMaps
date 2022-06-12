@@ -1,0 +1,181 @@
+% Main Code for data generation
+clearvars %-except Xdata Ydata
+close all
+clc
+delete results*
+A =  exist('Xdata')
+if A
+else
+Xdata =[];
+Ydata = [];
+end
+
+rng('shuffle'); 
+
+dmin = 0.05;
+dmax = 0.15;
+Tmax =5.0; %5.0 training, 5.5 validation
+Xm = [];
+Ns = 301; %Total Iterations 
+
+for j=1:Ns
+conv_samples=j;
+% Initialize time and output list
+Tlist =[];  
+t=0;
+while t<Tmax
+step = (dmax - dmin).*rand(1,1) + dmin; 
+Tlist = [Tlist,t];
+t = t+step;
+end
+Ylist = zeros(length(Tlist),3);
+
+kbio = 1e-3;
+Lbl = 0.005;%Length of Boundary Layer
+Y = 4.5;%Yield
+bres =  0.075;%self oxidization cst
+mu_max = 0.25;
+Ks =2e-5 ;%Monod constant
+kinh=1.5;
+pmax=0.2;
+alpha=3.0;
+beta = 0.1;
+
+
+ubf=1.1;
+lbf = 0.9;
+
+rng shuffle
+X(1)=( ubf*kbio - lbf*kbio).*rand(1,1) + lbf*kbio; %
+X(2)=( ubf*Lbl - lbf*Lbl).*rand(1,1) + lbf*Lbl; %
+X(3)=( ubf*Y - lbf*Y).*rand(1,1) + lbf*Y; %
+X(4)=( ubf*bres - lbf*bres).*rand(1,1) + lbf*bres; %
+X(5)=( ubf*mu_max - lbf*mu_max).*rand(1,1) + lbf*mu_max; %
+X(6)=( ubf*Ks - lbf*Ks).*rand(1,1) + lbf*Ks; %
+X(7)=( ubf*kinh - lbf*kinh).*rand(1,1) + lbf*kinh; %
+X(8)=( ubf*pmax - lbf*pmax).*rand(1,1) + lbf*pmax; %
+X(9)=( ubf*alpha - lbf*alpha).*rand(1,1) + lbf*alpha; %
+X(10)=( ubf*beta - lbf*beta).*rand(1,1) + lbf*beta; %
+
+
+tic
+training = false; %Select if generating training or validation samples
+[T,Y] =mes_integrate_f(X,Tmax,training);
+Y = Y';
+fprintf('Sampling step: %d' ,j)
+elapsed_Time(j) = toc
+fprintf('Elapsed time: %d' ,elapsed_Time(j))
+
+
+for j=1:length(Tlist)
+    for k=1:length(T)-1
+        if Tlist(j)>=T(k) && Tlist(j)<=T(k+1)
+    
+        Ylist(j,1) = Y(k,1) + (Tlist(j)-T(k))*(Y(k+1,1)-Y(k,1))/(T(k+1)-T(k));
+        Ylist(j,2) = Y(k,2) + (Tlist(j)-T(k))*(Y(k+1,2)-Y(k,2))/(T(k+1)-T(k));
+        Ylist(j,3) = Y(k,3) + (Tlist(j)-T(k))*(Y(k+1,3)-Y(k,3))/(T(k+1)-T(k));
+        
+        %Ylist(j,8) = Y(k,18) + (Tlist(j)-T(k))*(Y(k+1,18)-Y(k,18))/(T(k+1)-T(k));
+        
+        end 
+    end
+end
+
+
+hold all
+figure(112)
+for kk=1:3
+subplot(4,1,kk)
+plot(Tlist,Ylist(:,kk));
+hold on
+end
+
+Xm = [Xm, ([X(1);X(2);X(3);X(4);X(5);X(6);X(7);X(8);X(9);X(10)])];
+Xu = Xm';
+%Write all data
+M = transpose([Tlist;Ylist(:,1)';Ylist(:,2)';Ylist(:,3)'])
+
+% M = transpose([Tk;Lk;JEDk;JCOk]);
+% sim_res = ['results' '_' 'x1_'  num2str(X(1)) '_' 'x2_' num2str(X(2)) '_' ...
+%     'x3_' num2str(X(3))  ...
+%     '_' 'x4_'  num2str(X(4)) ...
+%       '_' 'x5_'  num2str(X(5)) '.txt' ];
+  
+% % sim_res2 = ['results' '_' 'x1_'  num2str(X(1)) '_' 'x2_' num2str(X(2)) '_' ...
+% %     'x3_' num2str(X(3))  ...
+% %     '_' 'x4_'  num2str(X(4))...
+% %     '_' 'x5_'  num2str(X(5))...
+% %      '_' 'x6_'  num2str(X(6)) '.csv' ];
+% % 
+% % % fID = fopen(sim_res,'w','n','UTF-8');
+% % % fprintf(fID,'%g %g %g %g %g \n', M');
+% % % fclose(fID);
+% % writematrix(M,sim_res2) 
+% % 
+% % npoints = length(Tlist);
+rng('shuffle')
+rhos = []
+
+
+validating = not(training);
+if validating ==false
+for k=1:size(M,1)-1
+fileIDX = fopen('inputs.csv','a+');
+Xpoint = [M(k,2:4),X,M(k+1,1)-M(k,1)];
+fprintf(fileIDX, '%f %f %f %f %f %f %f %f %f %f %f %f %f %f ', Xpoint)
+fprintf(fileIDX, '\n')
+
+fileIDY= fopen('outputs.csv','a+');
+Ypoint = [M(k+1,2:4)];
+fprintf(fileIDY, '%f %f %f  ', Ypoint)
+fprintf(fileIDY, '\n')
+end
+end
+
+fclose('all')
+if validating ==true;
+for k=1:size(M,1)-1
+Xpoint = [M(k,2:4),X,M(k+1,1)-M(k,1)];
+Ypoint = [M(k+1,2:4)];
+Xdata = [Xdata;Xpoint];
+Ydata = [Ydata;Ypoint];  
+end
+if conv_samples ==10;
+save('10_val_ext.mat','Xdata','Ydata')
+    break
+    return
+end
+
+end
+  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % if conv_samples==150
+% % save('150_real.mat','Xdata','Ydata')
+% % elseif conv_samples==200
+% % save('200_real.mat','Xdata','Ydata')
+% % elseif conv_samples==250
+% % save('250_real.mat','Xdata','Ydata')
+% % elseif conv_samples==300
+% % save('300_real.mat','Xdata','Ydata')
+% % elseif conv_samples==350
+% % save('350_real.mat','Xdata','Ydata')
+% % elseif conv_samples==400
+% % save('400_real.mat','Xdata','Ydata')
+% % elseif conv_samples==500
+% % save('500_real.mat','Xdata','Ydata')
+% % end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
+
+
+
+
+save('realizations.mat','Xu')
+
+save('elapsedtime.mat','elapsed_Time')
+
+
+
+
+
