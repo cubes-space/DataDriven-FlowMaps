@@ -1,0 +1,2 @@
+# Case Study 3
+We demonstrate the ability of PCK-based data-driven flow-map models to learn the transient behavior of a co-culture system with variable inputs.  Using a non-linear bioreactor model, we obtain observations that are corrupted with noise to emulate real data collection. In that case, the PCK model yields predictive error/confidence bounds on one-step ahead predictions which can be utilized in various ways to quantify uncertainty for trajectory generation
