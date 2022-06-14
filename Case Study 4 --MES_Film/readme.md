@@ -1,0 +1,2 @@
+# Case Study 4
+We examine the utility of data-driven flow-maps for the UQ of a Microbial Electrosynthesis (MES) bioreactor using a high-fidelity computational model that is subject to uncertainty in model parameters and initial conditions.  The data-driven flow map can be used to predict trajectories under various conditions and parameters much faster compared to the high-fidelity integrator. This renders the problem of forward and inverse UQ computationally tractable
